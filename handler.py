@@ -15,12 +15,12 @@ def create_question(two_variants_id):
     return question_choices[0] + ' ' + "или" + ' ' + question_choices[1].lower()
 
 
-def add_count(choice_n, user_text, user_state): 
+def add_count(choice_n, user_text, user_state):
     two_variants = get_object_by_id(choice_n, questions)
     subject_choices = list(map(lambda choice: choice["subject"], two_variants["choices"]))
     # увеличивает баллы
     if user_text == "1":
-        user_state[subject_choices[0]] += 10 
+        user_state[subject_choices[0]] += 10
     else:
         user_state[subject_choices[1]] += 10
     return user_state
@@ -28,9 +28,9 @@ def add_count(choice_n, user_text, user_state):
 
 def evaluate_result(user_state):
     # рассчитывает результат пользователя
-    user_state['repeat'] = 0 # обнуляю, чтобы затем узнать max значение для subject
+    user_state['repeat'] = 0  # обнуляю, чтобы затем узнать max значение для subject
     user_state['subject'] = 0
-    subject = max(user_state, key = user_state.get) # находит max значение и возвращает ключ
+    subject = max(user_state, key=user_state.get)  # находит max значение и возвращает ключ
     user_state['subject'] = subject
 
     if subject == 'nature':
@@ -40,18 +40,16 @@ def evaluate_result(user_state):
     elif subject == 'human':
         return "человек - человек. К этому типу относятся профессии, связанные с общением с людьми. Вам подходят специальности такие, как психолог, врач, преподаватель, менеджер, юрист, журналист, дипломат, политолог"
     elif subject == 'sign':
-        return "человек - знаковая система. Этот тип объединяет профессии, связанные со знаковой информацией, т.е. (текстами, цифрами, звуковыми сигналами, схемами, чертежами). Вам подходят такие специальности, как программист, архитектор, проектный менеджер, переводчик, экономист"
+        return "человек - знаковая система. Этот тип объединяет профессии, связанные со знаковой информацией, т.е. (текстами, цифрами, звуковыми сигалами, схемами, чертежами). Вам подходят такие специальности, как программист, архитектор, проектный менеджер, переводчик, экономист"
     elif subject == 'creativity':
         return "человек - художественный образ. К этому типу относятся професии, связанные с созданием чего-то нового или творческим переосмыслением уже привычного. Вам подходят такие специальности, как визажист, дизайнер, урбанист, маркетолог, писатель, актер, режиссер"
 
-    
+
 def choose_education(subject, education_place, education_count):
     if education_place == 1:
         text = uni[subject][education_count]
     elif education_place == 2:
         text = college[subject][education_count]
-    else:
-        pass
     if education_count == 0:
         text = "Чтобы перейти к следующему варианту, скажите \"следующий\"\n" + text
 
@@ -59,21 +57,20 @@ def choose_education(subject, education_place, education_count):
 
 
 template = {
-        'nature': 0,
-        'tech': 0,
-        'human': 0,
-        'sign': 0,
-        'creativity': 0,
-        'choice_number' : 1,
-        'repeat' : "",
-        'subject' : "",
-        'education_place' : 0,
-        'education_count' : 0
-    }
+    'nature': 0,
+    'tech': 0,
+    'human': 0,
+    'sign': 0,
+    'creativity': 0,
+    'choice_number': 1,
+    'repeat': "",
+    'subject': "",
+    'education_place': 0,
+    'education_count': 0
+}
 
 
-def handler(event, context = {}):
-
+def handler(event, context={}):
     isEndSession = False
 
     intents = event['request'].get('nlu', {}).get('intents')
@@ -92,22 +89,25 @@ def handler(event, context = {}):
 
     elif 'start_test' in intents:
         if choice_number != 1:
-            text = "Вы уже начали тест.\n" + "Какой из двух вариантов, первый или второй, вам больше нравится?\n" + create_question(choice_number)
+            text = "Вы уже начали тест.\n" + "Какой из двух вариантов, первый или второй, вам больше нравится?\n" + create_question(
+                choice_number)
         else:
-            text = "Поехали! Я буду предлагать два варианта занятий, а вам нужно будет выбрать тот, который больше нравится и назвать номер. Итак, вы бы хотели...\n" + create_question(1)
+            text = "Поехали! Я буду предлагать два варианта занятий, \
+                а вам нужно будет выбрать тот, который больше нравится \
+                и назвать номер. Итак, вы бы хотели...\n" + create_question(1)
 
 
     elif user_text in ['1', '2']:
         user_state = add_count(choice_number, user_text, user_state)
         choice_number += 1
-        user_state['choice_number'] = choice_number 
+        user_state['choice_number'] = choice_number
 
         if choice_number <= 20:
             text = choice(accept_words) + '\n' + create_question(choice_number)
         else:
             result = evaluate_result(user_state)
             # результат теста
-            text = "Тест завершен. Ваши результат: " + result  + "\n Теперь можно выбирать место учебы. Но перед этим скажите, вы рассматриваете ВУЗы, колледжи или оба варианта" 
+            text = "Тест завершен. Ваши результат: " + result + "\n Теперь можно выбирать место учебы. Но перед этим скажите, вы рассматриваете ВУЗы или колледжи?"
 
 
     elif user_text in NOTHING_WORDS:
@@ -119,10 +119,8 @@ def handler(event, context = {}):
             user_state['education_place'] = 1
         elif user_text in ['колледжи', 'только колледжи']:
             user_state['education_place'] = 2
-        else:
-            user_state['education_place'] = 'both'     
         text = choose_education(user_state['subject'], user_state['education_place'], user_state['education_count'])
-    
+
 
     elif user_text == 'следующий':
         if user_state['education_count'] <= 3:
@@ -142,19 +140,18 @@ def handler(event, context = {}):
         isEndSession = True
 
     else:
-        text = "Я не понимаю вас.\n Чтобы выйти, скажите \"завершить\".\nЧтобы повторить фразу, скажите \"повторить\"" 
-    
+        text = "Я не понимаю вас.\n Чтобы выйти, скажите \"завершить\".\nЧтобы повторить фразу, скажите \"повторить\""
+
     if text[:13] != 'Я не понимаю' or text != 'Нужно обязательно выбрать какой-то вариант':
         user_state['repeat'] = text
 
-
     return {
-        'version' : event['version'],
-        'session' : event['session'],
-        'response' : {
-            'text' : text,
-            'end_session' : isEndSession,
+        'version': event['version'],
+        'session': event['session'],
+        'response': {
+            'text': text,
+            'end_session': isEndSession,
 
         },
-        'session_state' : user_state
+        'session_state': user_state
     }

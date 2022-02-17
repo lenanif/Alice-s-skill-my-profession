@@ -1,2 +1,2 @@
 # Alice-skill-profession-test
-Code for Alice skill project
+A code for Alice skill project

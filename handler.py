@@ -3,6 +3,10 @@ from random import choice
 from education import uni, college
 import copy
 
+
+# Основная логика навыка
+
+
 accept_words = ['Отлично!', 'Поняла.', 'Принято!', 'Следующие варианты']
 NOTHING_WORDS = ['ничего', 'никакой']
 STUDY_WORDS = ['только вузы', 'вузы', 'только колледжи', 'колледжи', 'оба варианта', 'оба']

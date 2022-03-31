@@ -1,3 +1,3 @@
-# Alice-skill-profession-test
+# Alice-s-skill-profession-test
 A code for Alice skill project;
 Код навыка Яндекс Алисы "Моя профессия"

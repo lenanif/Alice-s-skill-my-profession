@@ -3,7 +3,6 @@ from education import *
 from random import choice
 import copy
 
-accept_words = ['Отлично!\n', 'Поняла.\n', 'Принято!\n', 'Следующие варианты\n', '']
 NOTHING_WORDS = ['ничего', 'никакой', 'не знаю']
 STUDY_WORDS = ['вузы', 'колледжи']
 
@@ -102,19 +101,24 @@ def handler(event:dict, context = {}):
 
     # основной диалог
     if event['session']['new']:
-        text = "Все профессии важны, все профессии нужны... Но какую выбрать? Я помогу вам с этим и подскажу, куда можно пойти учиться. Для этого нужно пройти тест.\nЧтобы узнать подробности, спросите \"Что ты умеешь?\"\nЧтобы начать тест, скажите \"Начать\"." 
+        text = "Все профессии важны, все профессии нужны... Но какую выбрать? Я помогу вам с этим и подскажу, куда можно пойти учиться. Для этого нужно пройти тест.\nЧтобы узнать подробности, скажите \"Помощь\"\nЧтобы начать тест, скажите \"Начать\"." 
         user_state['current_user_status'] = 'start_skill'
 
 
-    elif user_text in ["помощь", "что", "что ты умеешь"] and user_state['current_user_status'] == 'start_skill':
-        text = "Тест составлен так, что в каждом вопросе вам нужно выбрать деятельность, которая вам больше по душе. Далее вы узнаете, к какой профессиональной сфере вы склонны. Затем я назову несколько примеров профессий и учебных заведений Москвы, где есть эти специальности. Теперь к тесту?"
-        speach = "Тест составлен так, что в каждом вопросе вам нужно выбрать деятельность, которая вам больше по душе. Далее вы узнаете, к какой профессиональной сфере вы склонны. Затем я назову несколько примеров профессий и учебных заведений Москвы, где есть эти специальности.' sil <[100]> 'Теперь к тэсту?"
+    elif user_text in ["помощь", "что ты умеешь"]:
+        text = "Тест составлен так, что в каждом вопросе вам нужно выбрать деятельность, которая вам больше по душе. Далее вы узнаете, к какой профессиональной сфере вы склонны. Затем я назову несколько примеров профессий и учебных заведений Москвы, где есть эти специальности."
+        speach = "Тест составлен так, что в каждом вопросе вам нужно выбрать деятельность, которая вам больше по душе. Далее вы узнаете, к какой профессиональной сфере вы склонны. Затем я назову несколько примеров профессий и учебных заведений Москвы, где есть эти специальности.' sil <[100]>"
+        if user_state['current_user_status'] == 'start_skill':
+            text += "\nЧтобы начать тест, скажите \"Начать\"."
+            speach += "Чтобы начать тест, скажите \"Начать\"."
+        else:
+            text += " Продолжим?"
+            speach += "Продолжим?"
 
-    elif 'start_test' in intents and user_state['current_user_status'] == 'start_skill':
+
+    elif user_text == "начать":
         if choice_number > 1:
             text = "Вы уже начали тест.\n" + "Какой из двух вариантов, первый или второй, вам больше нравится?\n" + create_question(choice_number)
-        elif choice_number == 0: # проверяем, тк пользователь может сказать "Да" в любой момент. После окончания теста choice_number обнуляется
-            text = "Я не понимаю вас.\n Я могу повторить фразу или завершить навык."
         else:
             text = f"Поехали!\n{choice_number}/20\nВам нужно из двух вариантов выбрать тот, который больше нравится и назвать номер. Итак, вы бы хотели...\n" + create_question(choice_number)
             speach = "Поехали! Вам нужно из двух вариантов выбрать тот, который больше нравится и назвать номер. sil <[180]> Итак, вы бы хотели..." + create_speach(choice_number)
@@ -127,9 +131,10 @@ def handler(event:dict, context = {}):
         user_state['choice_number'] = choice_number 
 
         if choice_number <= 20:
-            accept_w = choice(accept_words)
-            text = f"{choice_number}/20\n" + accept_w + create_question(choice_number)
-            speach = accept_w + create_speach(choice_number)
+            text = f"{choice_number}/20\n" + create_question(choice_number)
+            speach = create_speach(choice_number)
+        elif choice_number == 0:
+            text = "Я не понимаю вас.\nЯ могу повторить фразу или завершить навык."
         else:
             result = evaluate_result(user_state)
             # результат теста
@@ -156,17 +161,23 @@ def handler(event:dict, context = {}):
             user_state['education_count'] += 1
             text = choose_education(user_state['subject'], user_state['education_place'], user_state['education_count'])
         else:
-            text = "На этом у меня все!"
-            speach = "На этом у меня все! Помните, что в современном быстро меняющемся мире невозможно выбрать профессию только один раз, скорее всего вы будете менять её в течение жизни, поэтому не бойтесь ошибиться. Что бы вы не выбрали, залог успеха - настойчивость и трудолюбие"
-            user_state['current_user_status'] = 0
+            text = "На этом у меня все! Помните, что в современном быстро меняющемся мире невозможно выбрать профессию только один раз, скорее всего вы будете менять её в течение жизни, поэтому не бойтесь ошибиться. Что бы вы не выбрали, залог успеха - настойчивость и трудолюбие"
+            isEndSession = True
 
 
-    elif 'repeat' in intents:
+    elif 'repeat' in intents or user_text == "да" and user_state['current_user_status'] == 'test':
         if repeat_speach != "":
             speach = repeat_speach
         else: 
             speach = repeat_text
         text = repeat_text
+
+    elif user_text == "да" and user_state['current_user_status'] == 'choose_education_place':
+        text = "Вы рассмотриваете ВУЗы или колледжи?"
+    
+
+    elif user_text == "да" and user_state['current_user_status'] == 'next':
+        text = "Чтобы перейти к следующему варианту скажите \"Следующий\""
 
 
     elif 'finish_test' in intents:
@@ -176,10 +187,10 @@ def handler(event:dict, context = {}):
 
 
     else:
-        text = "Я не понимаю вас.\nЯ могу повторить фразу или завершить навык." 
-    
+        text = "Я не понимаю вас.\nЯ могу повторить фразу или завершить навык."
 
-    if text != 'Я не понимаю вас.\nЯ могу повторить фразу или завершить навык.' and text != 'Нужно обязательно выбрать какой-то вариант':
+
+    if text != 'Я не понимаю вас.\nЯ могу повторить фразу или завершить навык.' and text != 'Нужно обязательно выбрать какой-то вариант' and text[:14] != 'Тест составлен':
         user_state['repeat_speach'] = speach
         user_state['repeat'] = text
 
@@ -211,6 +222,7 @@ def handler(event:dict, context = {}):
             'session_state' : user_state
         }
 
+
     # buttons
     if user_state['current_user_status'] == 'start_skill':
         response['response']['buttons'] = [
@@ -220,10 +232,6 @@ def handler(event:dict, context = {}):
             },
             {
                 'title': "Помощь",
-                'hide': True
-            },
-            {
-                'title': "Что ты умеешь?",
                 'hide': True
             }
         ]
@@ -257,5 +265,6 @@ def handler(event:dict, context = {}):
                 'hide': True
             }
         ]
+
 
     return response
